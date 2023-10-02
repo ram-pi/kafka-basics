@@ -1,4 +1,4 @@
-# Kafka Walkthrouth 
+# Kafka Examples  
 
 ## Requirements
 
@@ -6,6 +6,7 @@
 - [kcat](https://github.com/edenhill/kcat)
 - [kafka CLI utlities](https://kafka.apache.org/downloads)
 - [jr](https://github.com/ugol/jr)
+- [python3](https://www.python.org/downloads/)
 
 ### JR Config Generator
 
@@ -109,6 +110,13 @@ kcat -b localhost:9092 -G mygroup shoes
 
 # SHELL 2
 kcat -b localhost:9092 -G mygroup shoes
+
+### WITH COOPEERATIVE REBALANCING ###
+# SHELL 1
+kcat -b localhost:9092 -X partition.assignment.strategy=cooperative-sticky  -G mygroup shoes
+
+# SHELL 2
+kcat -b localhost:9092 -X partition.assignment.strategy=cooperative-sticky  -G mygroup shoes
 ```
 
 ## ACKs and NOT ENOUGH REPLICAS
@@ -144,4 +152,43 @@ kafka-topics --bootstrap-server localhost:9092 --describe --topic test
 # PRODUCING WITH ACK=1
 echo "test" | kafka-console-producer --bootstrap-server localhost:9092 --topic test --request-required-acks 1
 
+```
+
+## Compacted topic
+
+```
+kafka-topics --bootstrap-server localhost:9092 --delete --topic test 
+kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 1 --config min.insync.replicas=2 --config cleanup.policy=compact --config min.cleanable.dirty.ratio=0.0 --config max.compaction.lag.ms=100 --config segment.ms=100 --config delete.retention.ms=100
+kafka-topics --bootstrap-server localhost:9092 --describe --topic test 
+kcat -b localhost:9092 -t test -P -K : -l data.txt
+
+kcat -C -b localhost:9092 -t test \
+ -f 'Key is %k, and message payload is: %s \n'
+
+# ACTIVE SEGMENT ARE NOT ELIGIBLE FOR LOG COMPACTION -> FORCE COMPACTION WITH ONE NEW MESSAGE
+echo "key9:message21" | kcat -b localhost:9092 -P -t test -K:
+sleep 5
+
+kcat -C -b localhost:9092 -t test \
+ -f 'Key is %k, and message payload is: %s \n'
+```
+
+## Transactional Producer 
+
+```
+kafka-topics --bootstrap-server localhost:9092 --delete --topic test 
+kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 1 --config min.insync.replicas=2
+
+# SHELL 1 
+kcat -C -b localhost:9092 -X isolation.level=read_uncommitted -t test \
+ -f 'Key is %k, and message payload is: %s \n'
+
+# SHELL 2 
+kcat -C -b localhost:9092 -t test \
+ -f 'Key is %k, and message payload is: %s \n'
+
+# SHELL 3
+# Python Transactional Producer SHELL 3
+pip install -r transactional_producer/requirements.txt
+python3 transactional_producer/transactional_producer.py
 ```
