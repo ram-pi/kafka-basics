@@ -189,6 +189,44 @@ kcat -C -b localhost:9092 -t test \
 
 # SHELL 3
 # Python Transactional Producer SHELL 3
-pip install -r transactional_producer/requirements.txt
-python3 transactional_producer/transactional_producer.py
+pip install -r python_examples/requirements.txt
+python3 python_examples/transactional_producer.py
+```
+
+## ACLs 
+
+```
+docker-compose -f docker-compose.scram.yaml up -d
+
+# CREATE USER
+docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=alice-secret],SCRAM-SHA-512=[password=alice-secret]' --entity-type users --entity-name alice"
+docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=admin-secret],SCRAM-SHA-512=[password=admin-secret]' --entity-type users --entity-name admin"
+
+# CREATE TOPIC WITH SASL CREDENTIALS
+kafka-topics --bootstrap-server localhost:9092 --command-config kafka/admin.properties --delete --topic test
+kafka-topics --bootstrap-server localhost:9092 --command-config kafka/admin.properties --create --topic test
+
+# SET ACLs
+kafka-acls --bootstrap-server localhost:9092 \
+  --command-config kafka/admin.properties  \
+  --add \
+  --allow-principal User:alice \
+  --operation all \
+  --topic test
+
+kafka-acls --bootstrap-server localhost:9092 \
+  --command-config kafka/admin.properties  \
+  --add \
+  --deny-principal User:alice \
+  --operation delete \
+  --topic test
+
+# ALLOWED OPERATION
+echo "test" | kcat -b localhost:9092 -P -t test -X security.protocol=SASL_PLAINTEXT -X sasl.mechanism=SCRAM-SHA-256 -X sasl.username=alice -X sasl.password=alice-secret
+echo "test" | kcat -b localhost:9092 -C -o beginning -t test -X security.protocol=SASL_PLAINTEXT -X sasl.mechanism=SCRAM-SHA-256 -X sasl.username=alice -X sasl.password=alice-secret
+
+# NOT ALLOWED OPERATION
+kafka-topics --bootstrap-server localhost:9092 --command-config kafka/alice.properties --delete --topic test
+
+docker-compose -f docker-compose.scram.yaml down -d
 ```
