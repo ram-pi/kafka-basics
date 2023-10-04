@@ -28,13 +28,16 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:19091, EXTERNAL://localhost:9091
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_PORT: 19999
       KAFKA_JMX_HOSTNAME: kafka1
       KAFKA_BROKER_RACK: rack-0
-      KAFKA_OPTS: ""
+      KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.20.0.jar=8091:/tmp/kafka_config.yml"
+    volumes:
+      - $PWD/volumes/jmx_prometheus_javaagent-0.20.0.jar:/tmp/jmx_prometheus_javaagent-0.20.0.jar
+      - $PWD/volumes/kafka_config.yml:/tmp/kafka_config.yml
     ports:
       - 9091:9091
-      - 9999:9999
+      - 19999:19999
 
   kafka2:
     image: confluentinc/cp-server:${CFLT_TAG}
@@ -50,12 +53,16 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:19092, EXTERNAL://localhost:9092
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_PORT: 29999
       KAFKA_JMX_HOSTNAME: kafka2
       KAFKA_BROKER_RACK: rack-0
-      KAFKA_OPTS: ""
+      KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.20.0.jar=8091:/tmp/kafka_config.yml"
+    volumes:
+      - $PWD/volumes/jmx_prometheus_javaagent-0.20.0.jar:/tmp/jmx_prometheus_javaagent-0.20.0.jar
+      - $PWD/volumes/kafka_config.yml:/tmp/kafka_config.yml
     ports:
       - 9092:9092
+      - 29999:29999
 
   kafka3:
     image: confluentinc/cp-server:${CFLT_TAG}
@@ -71,9 +78,102 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:19093, EXTERNAL://localhost:9093
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_PORT: 39999
       KAFKA_JMX_HOSTNAME: kafka3
       KAFKA_BROKER_RACK: rack-0
-      KAFKA_OPTS: ""
+      KAFKA_OPTS: "-javaagent:/tmp/jmx_prometheus_javaagent-0.20.0.jar=8091:/tmp/kafka_config.yml"
+    volumes:
+      - $PWD/volumes/jmx_prometheus_javaagent-0.20.0.jar:/tmp/jmx_prometheus_javaagent-0.20.0.jar
+      - $PWD/volumes/kafka_config.yml:/tmp/kafka_config.yml
     ports:
       - 9093:9093
+      - 39999:39999
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:${CFLT_TAG}
+    hostname: schema-registry
+    container_name: schema-registry
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka1:19091,PLAINTEXT://kafka2:19092,PLAINTEXT://kafka3:19093
+      SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+
+  connect:
+    image: confluentinc/cp-kafka-connect:${CFLT_TAG}
+    hostname: connect
+    container_name: connect
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+      - schema-registry
+    ports:
+      - "8083:8083"
+    command:
+      - bash
+      - -c
+      - |
+        echo "Installing Connector"
+        confluent-hub install --no-prompt confluentinc/kafka-connect-datagen:0.5.3
+        #
+        echo "Launching Kafka Connect worker"
+        /etc/confluent/docker/run &
+        #
+        sleep infinity
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: "kkafka1:19091,kafka2:19092,kafka3:19093"
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_FLUSH_INTERVAL_MS: 10000
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: io.confluent.connect.avro.AvroConverter
+      CONNECT_VALUE_CONVERTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
+
+  control-center:
+    image: confluentinc/cp-enterprise-control-center:${CFLT_TAG}
+    hostname: control-center
+    container_name: control-center
+    depends_on:
+      - zookeeper1
+      - kafka1
+      - kafka2
+      - kafka3
+      - schema-registry
+    ports:
+      - "9021:9021"
+    environment:
+      CONTROL_CENTER_BOOTSTRAP_SERVERS: kafka1:19091,kafka2:19092,kafka3:19093
+      CONTROL_CENTER_ZOOKEEPER_CONNECT: zookeeper1:2181
+      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
+      CONTROL_CENTER_CONNECT_CONNECT_CLUSTER: "connect:8083"
+      CONTROL_CENTER_REPLICATION_FACTOR: 1
+      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
+      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
+      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
+      PORT: 9021
+
+  prometheus:
+    image: prom/prometheus:${PROM_TAG}
+    container_name: prometheus
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+    volumes:
+      - $PWD/volumes/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - 9090:9090

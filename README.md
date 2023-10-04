@@ -7,6 +7,7 @@
 - [kafka CLI utlities](https://kafka.apache.org/downloads)
 - [jr](https://github.com/ugol/jr)
 - [python3](https://www.python.org/downloads/)
+- [jq](https://jqlang.github.io/jq/download/)
 
 ### JR Config Generator
 
@@ -225,8 +226,33 @@ kafka-acls --bootstrap-server localhost:9092 \
 echo "test" | kcat -b localhost:9092 -P -t test -X security.protocol=SASL_PLAINTEXT -X sasl.mechanism=SCRAM-SHA-256 -X sasl.username=alice -X sasl.password=alice-secret
 echo "test" | kcat -b localhost:9092 -C -o beginning -t test -X security.protocol=SASL_PLAINTEXT -X sasl.mechanism=SCRAM-SHA-256 -X sasl.username=alice -X sasl.password=alice-secret
 
-# NOT ALLOWED OPERATION
+# DENIED OPERATION
 kafka-topics --bootstrap-server localhost:9092 --command-config kafka/alice.properties --delete --topic test
 
 docker-compose -f docker-compose.scram.yaml down -d
+```
+
+## Schema Registry
+
+```
+# GENERATE RANDOM DATA
+ksql-datagen value-format=avro quickstart=pageviews msgRate=1 bootstrap-server=localhost:9092 topic=pageviews
+
+curl localhost:8081/subjects/
+
+kcat -b localhost:9092 -t pageviews -s value=avro -r http://localhost:8081 -C -o beginning
+```
+
+## Kafka Connect
+
+```
+curl --request PUT \
+  --url http://localhost:8083/connectors/transactions/config \
+  --header 'content-type: application/json' \
+  --data '{"connector.class": "io.confluent.kafka.connect.datagen.DatagenConnector", "max.interval": 1000, "iterations": 100, "value.converter": "io.confluent.connect.avro.AvroConverter", "quickstart": "transactions", "kafka.topic": "transactions", "value.converter.schema.registry.url": "http://schema-registry:8081"}'
+
+curl localhost:8083/connectors | jq
+curl localhost:8083/connectors/transactions/status | jq
+curl -X DELETE localhost:8083/connectors/transactions | jq
+
 ```
