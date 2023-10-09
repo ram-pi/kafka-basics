@@ -8,5 +8,6 @@ scrape_configs:
           - "kafka1:8091"
           - "kafka2:8091"
           - "kafka3:8091"
+          - "broker:8091"
         labels:
           env: "dev"

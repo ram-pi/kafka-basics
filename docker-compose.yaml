@@ -38,6 +38,7 @@ services:
     ports:
       - 9091:9091
       - 19999:19999
+      - 8091:8091
 
   kafka2:
     image: confluentinc/cp-server:${CFLT_TAG}
@@ -63,6 +64,7 @@ services:
     ports:
       - 9092:9092
       - 29999:29999
+      - 8092:8091
 
   kafka3:
     image: confluentinc/cp-server:${CFLT_TAG}
@@ -88,6 +90,7 @@ services:
     ports:
       - 9093:9093
       - 39999:39999
+      - 8093:8091
 
   schema-registry:
     image: confluentinc/cp-schema-registry:${CFLT_TAG}

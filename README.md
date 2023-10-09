@@ -1,4 +1,4 @@
-# Kafka Examples  
+# Kafka Examples
 
 ## Requirements
 
@@ -8,8 +8,14 @@
 - [jr](https://github.com/ugol/jr)
 - [python3](https://www.python.org/downloads/)
 - [jq](https://jqlang.github.io/jq/download/)
+- [ksql-datagen](https://docs.ksqldb.io/en/0.10.1-ksqldb/developer-guide/test-and-debug/generate-custom-test-data/)
+- [curl](https://curl.se/)
 
 ### JR Config Generator
+
+<details>
+<summary>Configuration</summary>
+<br>
 
 ```
 {
@@ -84,18 +90,30 @@
 }
 ```
 
-## Partitioning 
+</details>
+
+## Partitioning
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
-kafka-topics --bootstrap-server localhost:9092 --delete --topic test 
+kafka-topics --bootstrap-server localhost:9092 --delete --topic test
 kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 3 --config min.insync.replicas=2
-kafka-topics --bootstrap-server localhost:9092 --describe --topic test 
+kafka-topics --bootstrap-server localhost:9092 --describe --topic test
 kcat -b localhost:9092 -t test -P -K : -l data.txt
 kcat -C -b localhost:9092 -t test \
  -f 'Topic %t - Partition %p: Key is %k, and message payload is: %s \n'
 ```
 
+</details>
+
 ## Consumer Group - Rebalancing
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
 kafka-topics --bootstrap-server localhost:9092 --delete --topic shoes
@@ -104,7 +122,7 @@ kafka-topics --bootstrap-server localhost:9092 --create --topic shoes --replicat
 kafka-topics --bootstrap-server localhost:9092 --describe --topic shoes
 
 # GENERATE RANDOM DATA
-jr emitter run shoe 
+jr emitter run shoe
 
 # SHELL 1
 kcat -b localhost:9092 -G mygroup shoes
@@ -120,7 +138,13 @@ kcat -b localhost:9092 -X partition.assignment.strategy=cooperative-sticky  -G m
 kcat -b localhost:9092 -X partition.assignment.strategy=cooperative-sticky  -G mygroup shoes
 ```
 
+</details>
+
 ## ACKs and NOT ENOUGH REPLICAS
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
 kafka-topics --bootstrap-server localhost:9092 --delete --topic test
@@ -155,12 +179,18 @@ echo "test" | kafka-console-producer --bootstrap-server localhost:9092 --topic t
 
 ```
 
+</details>
+
 ## Compacted topic
 
+<details>
+<summary>Example</summary>
+<br>
+
 ```
-kafka-topics --bootstrap-server localhost:9092 --delete --topic test 
+kafka-topics --bootstrap-server localhost:9092 --delete --topic test
 kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 1 --config min.insync.replicas=2 --config cleanup.policy=compact --config min.cleanable.dirty.ratio=0.0 --config max.compaction.lag.ms=100 --config segment.ms=100 --config delete.retention.ms=100
-kafka-topics --bootstrap-server localhost:9092 --describe --topic test 
+kafka-topics --bootstrap-server localhost:9092 --describe --topic test
 kcat -b localhost:9092 -t test -P -K : -l data.txt
 
 kcat -C -b localhost:9092 -t test \
@@ -174,17 +204,23 @@ kcat -C -b localhost:9092 -t test \
  -f 'Key is %k, and message payload is: %s \n'
 ```
 
-## Transactional Producer 
+</details>
+
+## Transactional Producer
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
-kafka-topics --bootstrap-server localhost:9092 --delete --topic test 
+kafka-topics --bootstrap-server localhost:9092 --delete --topic test
 kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 1 --config min.insync.replicas=2
 
-# SHELL 1 
+# SHELL 1
 kcat -C -b localhost:9092 -X isolation.level=read_uncommitted -t test \
  -f 'Key is %k, and message payload is: %s \n'
 
-# SHELL 2 
+# SHELL 2
 kcat -C -b localhost:9092 -t test \
  -f 'Key is %k, and message payload is: %s \n'
 
@@ -194,14 +230,20 @@ pip install -r python_examples/requirements.txt
 python3 python_examples/transactional_producer.py
 ```
 
-## ACLs 
+</details>
+
+## ACLs
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
 docker-compose -f docker-compose.scram.yaml up -d
 
 # CREATE USER
-docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=alice-secret],SCRAM-SHA-512=[password=alice-secret]' --entity-type users --entity-name alice"
 docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=admin-secret],SCRAM-SHA-512=[password=admin-secret]' --entity-type users --entity-name admin"
+docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=alice-secret],SCRAM-SHA-512=[password=alice-secret]' --entity-type users --entity-name alice"
 
 # CREATE TOPIC WITH SASL CREDENTIALS
 kafka-topics --bootstrap-server localhost:9092 --command-config kafka/admin.properties --delete --topic test
@@ -232,18 +274,31 @@ kafka-topics --bootstrap-server localhost:9092 --command-config kafka/alice.prop
 docker-compose -f docker-compose.scram.yaml down -d
 ```
 
+</details>
+
 ## Schema Registry
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
 # GENERATE RANDOM DATA
-ksql-datagen value-format=avro quickstart=pageviews msgRate=1 bootstrap-server=localhost:9092 topic=pageviews
+# jr run shoe_order -o kafka -t shoe_order -s --serializer json-schema -f 1s -d 10m
+ksql-datagen value-format=avro quickstart=pageviews msgRate=1 bootstrap-server=localhost:9092 topic=pageviews iterations=100
 
 curl localhost:8081/subjects/
 
 kcat -b localhost:9092 -t pageviews -s value=avro -r http://localhost:8081 -C -o beginning
 ```
 
+</details>
+
 ## Kafka Connect
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
 curl --request PUT \
@@ -254,5 +309,23 @@ curl --request PUT \
 curl localhost:8083/connectors | jq
 curl localhost:8083/connectors/transactions/status | jq
 curl -X DELETE localhost:8083/connectors/transactions | jq
+```
+
+</details>
+
+## ConfigProvider
+
+<details>
+<summary>Example</summary>
+<br>
 
 ```
+docker-compose -f docker-compose.scram.yaml up -d
+docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=admin-secret],SCRAM-SHA-512=[password=admin-secret]' --entity-type users --entity-name admin"
+
+kafka-topics --bootstrap-server localhost:9092 --command-config kafka/admin_with_file_config_provider.properties --create --topic test
+kafka-topics --bootstrap-server localhost:9092 --command-config kafka/admin_with_file_config_provider.properties --list
+
+```
+
+</details>
