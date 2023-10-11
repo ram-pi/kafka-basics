@@ -1,6 +1,7 @@
 package com.github.prametta.producer;
 
 import com.github.javafaker.Faker;
+import com.github.prametta.model.Beer;
 import io.confluent.common.utils.Utils;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
@@ -12,14 +13,14 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Log4j2
-public class MyProducer implements Callback, Runnable {
+public class MyBeerProducer implements Callback, Runnable {
 
     public static void main(String[] args) {
         //new Thread(new MyProducer()).start();
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         // scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit)
-        scheduler.scheduleAtFixedRate(new MyProducer(), 0, 60, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(new MyBeerProducer(), 0, 60, TimeUnit.SECONDS);
     }
 
     @Override
@@ -34,23 +35,34 @@ public class MyProducer implements Callback, Runnable {
     @Override
     @SneakyThrows
     public void run() {
-        log.info("MyProducer Running!");
-        String topic = "quotes";
+        log.info("MyBeerProducer Running!");
+        String topic = "beers";
         Faker faker = new Faker();
 
         // set properties
         Properties props = Utils.loadProps("client.properties");
         props.setProperty(ProducerConfig.LINGER_MS_CONFIG, String.valueOf(0));
 
+        // define serializer
+        props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer");
+        props.setProperty("schema.registry.url", "http://localhost:8081");
+
         // print properties
         log.info("Properties: {}", props);
 
         // create the producer
-        KafkaProducer<String, String> producer = new KafkaProducer<>(props);
+        KafkaProducer<String, Beer> producer = new KafkaProducer<>(props);
 
         // send data - asynchronous
         for (int i = 0; i < 100; i++) {
-            producer.send(new ProducerRecord<>(topic, faker.gameOfThrones().house(), faker.gameOfThrones().quote()), this);
+            Beer b = new Beer(
+                    faker.beer().hop(),
+                    faker.beer().malt(),
+                    faker.beer().name(),
+                    faker.beer().style(),
+                    faker.beer().yeast()
+            );
+            producer.send(new ProducerRecord<>(topic, b.getMalt(), b), this);
         }
 
         // flush data - synchronous
