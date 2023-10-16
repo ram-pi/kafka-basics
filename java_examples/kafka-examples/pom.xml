@@ -12,6 +12,8 @@
         <module>common</module>
         <module>consumer</module>
         <module>producer</module>
+        <module>schema-registry</module>
+        <module>streams</module>
     </modules>
 
     <properties>

@@ -329,3 +329,34 @@ kafka-topics --bootstrap-server localhost:9092 --command-config kafka/admin_with
 ```
 
 </details>
+
+## Prometheus JMX exporter
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+# SHELL 1
+docker-compose -f docker-compose.kraft.yml up -d
+export KAFKA_OPTS="-javaagent:volumes/jmx_prometheus_javaagent-0.20.0.jar=9191:volumes/kafka_client.yml"
+kafka-topics --bootstrap-server localhost:9092 --create --topic test
+kafka-console-consumer --bootstrap-server localhost:9092 --topic test
+
+# SHELL 2
+curl localhost:9191
+```
+
+## Schema Registry Maven Plugin
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+cd java_examples/kafka-examples
+```
+
+</details>
+
+</details>

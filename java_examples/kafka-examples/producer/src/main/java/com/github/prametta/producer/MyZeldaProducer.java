@@ -1,22 +1,16 @@
 package com.github.prametta.producer;
 
+import com.github.javafaker.Faker;
+import com.github.prametta.model.ZeldaOuterClass.Zelda;
+import io.confluent.common.utils.Utils;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
+import org.apache.kafka.clients.producer.*;
+
 import java.util.Properties;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import org.apache.kafka.clients.producer.Callback;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
-
-import com.github.javafaker.Faker;
-import com.github.prametta.model.ZeldaOuterClass.Zelda;
-
-import io.confluent.common.utils.Utils;
-import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 
 @Log4j2
 public class MyZeldaProducer implements Callback, Runnable {

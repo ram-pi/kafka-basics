@@ -23,6 +23,15 @@ import io.confluent.kafka.serializers.KafkaJsonDeserializerConfig;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 
+/**
+ * This class represents a Kafka consumer for the "beers" topic. It implements
+ * the Runnable and ConsumerRebalanceListener interfaces.
+ * It creates a Kafka consumer with the given properties and subscribes to the
+ * "beers" topic.
+ * It polls for new data and logs the received messages.
+ * It also implements a graceful shutdown mechanism by adding a shutdown hook to
+ * the runtime.
+ */
 @Log4j2
 public class MyBeerConsumer implements Runnable, ConsumerRebalanceListener {
 
@@ -116,4 +125,5 @@ public class MyBeerConsumer implements Runnable, ConsumerRebalanceListener {
         log.info("Closing consumer ...");
         consumer.close();
     }
+
 }
