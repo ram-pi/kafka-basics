@@ -45,7 +45,6 @@ public class MyBeerProducer implements Callback, Runnable {
 
         // define serializer
         props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer");
-        props.setProperty("schema.registry.url", "http://localhost:8081");
 
         // print properties
         log.info("Properties: {}", props);
