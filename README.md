@@ -4,6 +4,7 @@
 
 - [docker, docker-compose](https://docs.docker.com/get-docker/)
 - [kcat](https://github.com/edenhill/kcat)
+- [java + maven](https://sdkman.io/)
 - [kafka CLI utlities](https://kafka.apache.org/downloads)
 - [jr](https://github.com/ugol/jr)
 - [python3](https://www.python.org/downloads/)
@@ -89,6 +90,20 @@
   }
 }
 ```
+
+## Docker Kafka Toolbox
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+docker run --rm -d --name kafka-multitool rampi88/kafka-multitool:v1
+docker exec -it kafka-multitool bash
+docker stop kafka-multitool
+```
+
+</details>
 
 </details>
 
@@ -358,5 +373,41 @@ cd java_examples/kafka-examples
 ```
 
 </details>
+
+</details>
+
+## Kafka Streams Java example
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+cd java_examples/kafka-examples
+mvn package
+# Shell 1 - Produce
+java -javaagent:jmx_prometheus_javaagent-0.20.0.jar=9191:prometheus_config.yml -cp producer/target/producer-1.0-SNAPSHOT.jar com.github.prametta.producer.MyBeerProducer
+# Shell 2 - Consumer
+java -javaagent:jmx_prometheus_javaagent-0.20.0.jar=9192:prometheus_config.yml -cp consumer/target/consumer-1.0-SNAPSHOT.jar com.github.prametta.consumer.MyBeerConsumer
+# Shell 3 - Process
+java -javaagent:jmx_prometheus_javaagent-0.20.0.jar=9193:prometheus_config.yml -cp  streams/target/streams-1.0-SNAPSHOT.jar com.github.prametta.streams.MyKafkaBeerStreamApp
+```
+
+</details>
+
+## Kafka Streams Java example on docker-compose
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+cd java_examples/kafka-examples
+mvn package
+cd ../../
+docker-compose -f docker-compose.kraft.clients.yml up -d --build
+# tierdown
+docker-compose -f docker-compose.kraft.clients.yml down -v
+```
 
 </details>

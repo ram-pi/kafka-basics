@@ -7,19 +7,12 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.producer.*;
 
 import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Log4j2
 public class MyProducer implements Callback, Runnable {
 
     public static void main(String[] args) {
-        //new Thread(new MyProducer()).start();
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-        // scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit)
-        scheduler.scheduleAtFixedRate(new MyProducer(), 0, 60, TimeUnit.SECONDS);
+        new Thread(new MyProducer()).start();
     }
 
     @Override

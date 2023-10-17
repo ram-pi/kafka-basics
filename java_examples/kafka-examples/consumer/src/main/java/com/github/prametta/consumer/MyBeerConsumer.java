@@ -1,27 +1,21 @@
 package com.github.prametta.consumer;
 
+import com.github.javafaker.Faker;
+import com.github.prametta.model.Beer;
+import io.confluent.common.utils.Utils;
+import io.confluent.kafka.serializers.KafkaJsonDeserializerConfig;
+import lombok.SneakyThrows;
+import lombok.extern.log4j.Log4j2;
+import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
+
 import java.time.Duration;
 import java.util.Collection;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import org.apache.kafka.clients.consumer.Consumer;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.WakeupException;
-
-import com.github.javafaker.Faker;
-import com.github.prametta.model.Beer;
-
-import io.confluent.common.utils.Utils;
-import io.confluent.kafka.serializers.KafkaJsonDeserializerConfig;
-import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 
 /**
  * This class represents a Kafka consumer for the "beers" topic. It implements
@@ -92,6 +86,8 @@ public class MyBeerConsumer implements Runnable, ConsumerRebalanceListener {
         props.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         props.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,
                 "org.apache.kafka.common.serialization.StringDeserializer");
+        props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+                "io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer");
         props.setProperty(KafkaJsonDeserializerConfig.JSON_VALUE_TYPE, Beer.class.getName());
 
         // print properties
