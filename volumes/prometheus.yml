@@ -2,7 +2,7 @@ global:
   scrape_interval: 15s
 
 scrape_configs:
-  - job_name: "kafka"
+  - job_name: "kafka-broker"
     static_configs:
       - targets:
           - "kafka1:8091"
@@ -11,3 +11,8 @@ scrape_configs:
           - "broker:8091"
         labels:
           env: "dev"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: hostname
+        regex: '([^:]+)(:[0-9]+)?'
+        replacement: '${1}'

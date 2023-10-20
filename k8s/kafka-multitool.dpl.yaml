@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kafka-multitool
+  name: kafka-multitool
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-multitool
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: kafka-multitool
+    spec:
+      containers:
+      - image: rampi88/kafka-multitool:v1
+        name: kafka-multitool
+        resources: 
+          limits:
+            cpu: "0.5"
+            memory: "512Mi"
+          requests:
+            cpu: "0.1"
+            memory: "256Mi"

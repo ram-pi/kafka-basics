@@ -117,3 +117,25 @@ services:
       - $PWD/docker-compose.client.properties:/client.properties
       - $PWD/volumes/jmx_prometheus_javaagent-0.20.0.jar:/tmp/jmx_prometheus_javaagent-0.20.0.jar
       - $PWD/volumes/kafka_client.yml:/tmp/kafka_client.yml
+
+  spring-client:
+    build: java_examples/spring-kafka-client
+    hostname: spring-client
+    container_name: spring-client
+    depends_on:
+      - broker
+    command:
+      [
+        "java",
+        "-javaagent:/tmp/jmx_prometheus_javaagent-0.20.0.jar=9191:/tmp/kafka_client.yml",
+        "-jar",
+        "app.jar",
+        "--spring.config.location=application.properties",
+      ]
+    ports:
+      - "9194:9191"
+      - "8080:8080"
+    volumes:
+      - $PWD/docker-compose.application.properties:/application.properties
+      - $PWD/volumes/jmx_prometheus_javaagent-0.20.0.jar:/tmp/jmx_prometheus_javaagent-0.20.0.jar
+      - $PWD/volumes/kafka_client.yml:/tmp/kafka_client.yml

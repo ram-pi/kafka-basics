@@ -1,0 +1,18 @@
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: kafka-scaledobject
+  namespace: default
+spec:
+  scaleTargetRef:
+    name: azure-functions-deployment
+  pollingInterval: 30
+  triggers:
+  - type: kafka
+    metadata:
+      bootstrapServers: localhost:9092
+      consumerGroup: my-group       # Make sure that this consumer group name is the same one as the one that is consuming topics
+      topic: test-topic
+      # Optional
+      lagThreshold: "50"
+      offsetResetPolicy: latest

@@ -7,12 +7,22 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.kafka.clients.producer.*;
 
 import java.util.Properties;
+import java.util.concurrent.*;
 
 @Log4j2
 public class MyProducer implements Callback, Runnable {
 
     public static void main(String[] args) {
-        new Thread(new MyProducer()).start();
+//        new Thread(new MyProducer()).start();
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(new MyProducer(), 0, 60, TimeUnit.SECONDS);
+        try {
+            future.get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        } finally {
+            scheduler.shutdown();
+        }
     }
 
     @Override
@@ -43,7 +53,7 @@ public class MyProducer implements Callback, Runnable {
 
         // send data - asynchronous
         for (int i = 0; i < 100; i++) {
-            producer.send(new ProducerRecord<>(topic, faker.gameOfThrones().house(), faker.gameOfThrones().quote()), this);
+            producer.send(new ProducerRecord<>(topic, faker.gameOfThrones().house(), faker.gameOfThrones().quote()), this).get(30, TimeUnit.SECONDS);
         }
 
         // flush data - synchronous

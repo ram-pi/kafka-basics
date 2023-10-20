@@ -11,6 +11,7 @@
 - [jq](https://jqlang.github.io/jq/download/)
 - [ksql-datagen](https://docs.ksqldb.io/en/0.10.1-ksqldb/developer-guide/test-and-debug/generate-custom-test-data/)
 - [curl](https://curl.se/)
+- [kind](https://kind.sigs.k8s.io/)
 
 ### JR Config Generator
 
@@ -91,6 +92,8 @@
 }
 ```
 
+</details>
+
 ## Docker Kafka Toolbox
 
 <details>
@@ -102,8 +105,6 @@ docker run --rm -d --name kafka-multitool rampi88/kafka-multitool:v1
 docker exec -it kafka-multitool bash
 docker stop kafka-multitool
 ```
-
-</details>
 
 </details>
 
@@ -408,6 +409,132 @@ cd ../../
 docker-compose -f docker-compose.kraft.clients.yml up -d --build
 # tierdown
 docker-compose -f docker-compose.kraft.clients.yml down -v
+```
+
+</details>
+
+## Confluent for Kubernetes - Dynamic client switch from cluster 1 to cluster 2 ([Reloader](https://github.com/stakater/Reloader]))
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+cd k8s
+alias k="kubectl"
+kind create cluster
+# Create namespaces
+k create namespace confluent
+k create namespace confluent-dr
+k config set-context --current --namespace=confluent
+
+# install Reloader
+kubectl apply -f https://raw.githubusercontent.com/stakater/Reloader/master/deployments/kubernetes/reloader.yaml
+
+# Install Confluent for Kubernetes Operator
+helm repo add confluentinc https://packages.confluent.io/helm
+helm repo update
+helm upgrade --install confluent-operator \
+  confluentinc/confluent-for-kubernetes \
+  --set namespaced=false \
+  --namespace confluent
+
+# install the confluent kubernetes plugin (OPTIONAL)
+... [Confluent Plugin](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
+
+# Create main cluster
+k apply -f cluster.1.yaml
+
+# Create DR cluster
+k config set-context --current --namespace=confluent-dr
+k apply -f cluster.2.yaml
+
+# Create conifgmap used by the producer
+k create configmap client-properties --from-file=client.properties
+
+# Create the producer - the client will produce to the main cluster
+k apply -f producer.dpl.yaml
+
+# Edit the configmap and auto reboot the producer - the client will produce against the DR cluster now
+kubectl edit configmap client-properties # change the bootstrap server to kafka.confluent-dr
+```
+
+</details>
+
+## Confluent for Kubernetes - Injecting secrets with Vault (TODO)
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+cd k8s
+alias k="kubectl"
+kind create cluster
+# Create namespaces
+k create namespace confluent
+k config set-context --current --namespace=confluent
+
+# install Vault
+helm repo add hashicorp https://helm.releases.hashicorp.com
+helm repo update
+helm install vault hashicorp/vault --set "server.dev.enabled=true"
+
+# Install Confluent for Kubernetes Operator
+helm repo add confluentinc https://packages.confluent.io/helm
+helm repo update
+helm upgrade --install confluent-operator \
+  confluentinc/confluent-for-kubernetes \
+  --set namespaced=false \
+  --namespace confluent
+
+# install the confluent kubernetes plugin (OPTIONAL)
+... [Confluent Plugin](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
+
+# Create main cluster
+k apply -f cluster.1.yaml
+
+# Create conifgmap used by the producer
+k create configmap client-properties --from-file=client.properties
+
+# Create the producer - the client will produce to the main cluster
+k apply -f producer.dpl.yaml
+```
+
+</details>
+
+## Confluent for Kubernetes - Consumer AutoScaling with KEDA (TODO)
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+cd k8s
+alias k="kubectl"
+kind create cluster
+# Create namespaces
+k create namespace confluent
+k config set-context --current --namespace=confluent
+
+# Install Confluent for Kubernetes Operator
+helm repo add confluentinc https://packages.confluent.io/helm
+helm repo update
+helm upgrade --install confluent-operator \
+  confluentinc/confluent-for-kubernetes \
+  --set namespaced=false \
+  --namespace confluent
+
+# install the confluent kubernetes plugin (OPTIONAL)
+... [Confluent Plugin](https://docs.confluent.io/operator/current/co-deploy-cfk.html#co-install-plugin)
+
+# Create main cluster
+k apply -f cluster.1.yaml
+
+# Install KEDA
+helm repo add kedacore https://kedacore.github.io/charts
+helm repo update
+
 ```
 
 </details>
