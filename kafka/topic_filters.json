@@ -1,0 +1,9 @@
+{
+  "topicFilters": [
+    {
+      "filterType": "INCLUDE",
+      "name": "example",
+      "patternType": "LITERAL"
+    }
+  ]
+}

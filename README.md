@@ -104,6 +104,9 @@
 docker run --rm -d --name kafka-multitool rampi88/kafka-multitool:v1
 docker exec -it kafka-multitool bash
 docker stop kafka-multitool
+
+# build and push multi-tool
+docker build -t rampi88/kafka-multitool:v1 .
 ```
 
 </details>
@@ -559,10 +562,10 @@ docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --al
 docker exec -it kafka-multitool bash
 
 # Create topics on Cluster A
-kafka-topics.sh --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --create --topic Test-mytopic
+kafka-topics --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --create --topic Test-mytopic
 
 # Set prefixed ACLs on Cluster A
-kafka-acls.sh --bootstrap-server kafka1:9091 \
+kafka-acls --bootstrap-server kafka1:9091 \
   --command-config /tmp/admin.properties \
   --add \
   --allow-principal User:alice \
@@ -571,7 +574,7 @@ kafka-acls.sh --bootstrap-server kafka1:9091 \
   --resource-pattern-type prefixed
 
 # Set literal ACLs on Cluster A
-kafka-acls.sh --bootstrap-server kafka1:9091 \
+kafka-acls --bootstrap-server kafka1:9091 \
   --command-config /tmp/admin.properties \
   --add \
   --allow-principal User:alice \
@@ -579,15 +582,80 @@ kafka-acls.sh --bootstrap-server kafka1:9091 \
   --topic Test-mytopic
 
 # Run MirrorMaker2 from kafka-multitool
-connect-mirror-maker.sh /tmp/mm2.properties
+connect-mirror-maker /tmp/mm2.properties
 
 # List Topics from both clusters
-kafka-topics.sh --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --list
-kafka-topics.sh --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
+kafka-topics --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --list
+kafka-topics --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
 
 # List ACLs from both clusters
-kafka-acls.sh --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --list
-kafka-acls.sh --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
+kafka-acls --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --list
+kafka-acls --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
+
+# Note that only the literal ACL has been migrated
+
+docker-compose -f docker-compose.migration.yaml down -d
+
+```
+
+</details>
+
+## ClusterLinking ACLs migration
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+docker-compose -f docker-compose.migration.yaml up -d
+
+# Create Users in Cluster A (Source)
+docker exec -it kafka1 sh -c "kafka-configs --bootstrap-server kafka1:19091 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=admin-secret],SCRAM-SHA-512=[password=admin-secret]' --entity-type users --entity-name admin"
+docker exec -it kafka1 sh -c "kafka-configs --bootstrap-server kafka1:19091 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=alice-secret],SCRAM-SHA-512=[password=alice-secret]' --entity-type users --entity-name alice"
+# Create Users in Cluster B (Destination)
+docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=admin-secret],SCRAM-SHA-512=[password=admin-secret]' --entity-type users --entity-name admin"
+docker exec -it kafka2 sh -c "kafka-configs --bootstrap-server kafka2:19092 --alter --add-config 'SCRAM-SHA-256=[iterations=8192,password=alice-secret],SCRAM-SHA-512=[password=alice-secret]' --entity-type users --entity-name alice"
+
+# Open a bash session from kafka-multitool
+docker exec -it kafka-multitool bash
+
+# Create topics on Cluster A
+kafka-topics --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --create --topic Test-mytopic
+
+# Set prefixed ACLs on Cluster A
+kafka-acls --bootstrap-server kafka1:9091 \
+  --command-config /tmp/admin.properties \
+  --add \
+  --allow-principal User:alice \
+  --operation all \
+  --topic Test- \
+  --resource-pattern-type prefixed
+
+# Set literal ACLs on Cluster A
+kafka-acls --bootstrap-server kafka1:9091 \
+  --command-config /tmp/admin.properties \
+  --add \
+  --allow-principal User:alice \
+  --operation all \
+  --topic Test-mytopic
+
+# Create Cluster Link
+# https://docs.confluent.io/platform/current/multi-dc-deployments/cluster-linking/configs.html#configuration-options
+kafka-cluster-links --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --create --link demo-link \
+--config-file /tmp/link.properties --acl-filters-json-file /tmp/acl_filters.json \
+--consumer-group-filters-json-file /tmp/consumer_group_filters.json  \
+--topic-filters-json-file /tmp/topic_filters.json
+
+kafka-cluster-links --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
+kafka-cluster-links --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --link demo-link --describe
+
+# List Topics from both clusters
+kafka-topics --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --list
+kafka-topics --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
+
+# List ACLs from both clusters
+kafka-acls --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --list
+kafka-acls --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
 
 # Note that only the literal ACL has been migrated
 

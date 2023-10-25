@@ -1,0 +1,9 @@
+{
+    "groupFilters": [
+        {
+            "filterType": "INCLUDE",
+            "name": "*",
+            "patternType": "LITERAL"
+        }
+    ]
+}

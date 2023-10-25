@@ -10,7 +10,7 @@ RUN apt update -y \
     && apt install -y vim \
     && apt install -y dnsutils \
     && apt clean -y
-RUN curl https://downloads.apache.org/kafka/3.6.0/kafka_2.13-3.6.0.tgz -o kafka.tgz \
+RUN curl https://packages.confluent.io/archive/7.5/confluent-7.5.1.tar.gz -o kafka.tgz \
     && mkdir kafka \
     && tar -xvzf kafka.tgz -C kafka --strip-components=1 \
     && echo "alias kcat=kafkacat" >> ~/.bashrc \
