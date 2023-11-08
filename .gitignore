@@ -102,3 +102,5 @@ fabric.properties
 **/logs/**
 **/.DS_Store
 **/.idea
+**/.mvn
+**/local
