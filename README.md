@@ -373,7 +373,7 @@ curl localhost:9191
 <br>
 
 ```
-cd java_examples/kafka-examples
+cd examples/kafka-examples
 ```
 
 </details>
@@ -387,7 +387,7 @@ cd java_examples/kafka-examples
 <br>
 
 ```
-cd java_examples/kafka-examples
+cd examples/kafka-examples
 mvn package
 # Shell 1 - Produce
 java -javaagent:jmx_prometheus_javaagent-0.20.0.jar=9191:prometheus_config.yml -cp producer/target/producer-1.0-SNAPSHOT.jar com.github.prametta.producer.MyBeerProducer
@@ -406,7 +406,7 @@ java -javaagent:jmx_prometheus_javaagent-0.20.0.jar=9193:prometheus_config.yml -
 <br>
 
 ```
-cd java_examples/kafka-examples
+cd examples/kafka-examples
 mvn package
 cd ../../
 docker-compose -f docker-compose.kraft.clients.yml up -d --build

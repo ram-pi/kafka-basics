@@ -104,3 +104,6 @@ fabric.properties
 **/.idea
 **/.mvn
 **/local
+**/jupyter-notebooks/.ipynb_checkpoints
+**/jd-gui.cfg
+**/mvnw**
