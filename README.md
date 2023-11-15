@@ -664,3 +664,41 @@ docker-compose -f docker-compose.migration.yaml down -d
 ```
 
 </details>
+
+## Zookeeper - Reconfigure Quorum
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+cd zk-reconfigure
+
+# Start a 3-nodes zookeeper quorum
+./startup.sh
+
+# Add 2 nodes to the existing cluster
+zookeeper-server-start zoo.4.properties >> zoo.4.log 2>&1 &
+zookeeper-server-start zoo.5.properties >> zoo.5.log 2>&1 &
+
+# Restart the existing nodes - Follower first, Leader afterwards
+./leader_finder.sh
+
+# Order will change
+./shutdown.sh 1
+zookeeper-server-start zoo.1.new.properties >> zoo.1.log 2>&1 &
+sleep 5
+
+./shutdown.sh 2
+zookeeper-server-start zoo.2.new.properties >> zoo.2.log 2>&1 &
+sleep 5
+
+./shutdown.sh 3
+zookeeper-server-start zoo.3.new.properties >> zoo.3.log 2>&1 &
+sleep 5
+
+./leader_finder.sh
+
+```
+
+</details>

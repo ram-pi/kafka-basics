@@ -62,7 +62,7 @@ services:
       - 9090:9090
 
   producer:
-    build: java_examples/kafka-examples/producer
+    build: examples/kafka-examples/producer
     hostname: producer
     container_name: producer
     command:
@@ -81,7 +81,7 @@ services:
       - $PWD/volumes/kafka_client.yml:/tmp/kafka_client.yml
 
   consumer:
-    build: java_examples/kafka-examples/consumer
+    build: examples/kafka-examples/consumer
     hostname: consumer
     container_name: consumer
     command:
@@ -100,7 +100,7 @@ services:
       - $PWD/volumes/kafka_client.yml:/tmp/kafka_client.yml
 
   stream:
-    build: java_examples/kafka-examples/streams
+    build: examples/kafka-examples/streams
     hostname: stream
     container_name: stream
     command:
@@ -119,7 +119,7 @@ services:
       - $PWD/volumes/kafka_client.yml:/tmp/kafka_client.yml
 
   spring-client:
-    build: java_examples/spring-kafka-client
+    build: examples/spring-kafka-client
     hostname: spring-client
     container_name: spring-client
     depends_on:
