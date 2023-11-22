@@ -19,6 +19,15 @@
 <summary>Configuration</summary>
 <br>
 
+Install JR:
+
+```
+brew install jr 
+```
+
+You can edit the following jr configuration as needed. 
+
+
 ```
 {
   "emitters": [
