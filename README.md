@@ -208,19 +208,22 @@ echo "test" | kafka-console-producer --bootstrap-server localhost:9092 --topic t
 
 ```
 kafka-topics --bootstrap-server localhost:9092 --delete --topic test
-kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 1 --config min.insync.replicas=2 --config cleanup.policy=compact --config min.cleanable.dirty.ratio=0.0 --config max.compaction.lag.ms=100 --config segment.ms=100 --config delete.retention.ms=100
+kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 \
+--partitions 1 --config min.insync.replicas=2 --config cleanup.policy=compact \
+--config min.cleanable.dirty.ratio=0.0 --config max.compaction.lag.ms=100 \
+--config segment.ms=100 --config delete.retention.ms=100
 kafka-topics --bootstrap-server localhost:9092 --describe --topic test
 kcat -b localhost:9092 -t test -P -K : -l data.txt
 
 kcat -C -b localhost:9092 -t test \
- -f 'Key is %k, and message payload is: %s \n'
+ -f 'Offset: %o, Key: %k, Message payload: %s \n'
 
 # ACTIVE SEGMENT ARE NOT ELIGIBLE FOR LOG COMPACTION -> FORCE COMPACTION WITH ONE NEW MESSAGE
 echo "key9:message21" | kcat -b localhost:9092 -P -t test -K:
 sleep 5
 
 kcat -C -b localhost:9092 -t test \
- -f 'Key is %k, and message payload is: %s \n'
+ -f 'Offset: %o, Key: %k, Message payload: %s \n'
 ```
 
 </details>
@@ -648,6 +651,9 @@ kafka-cluster-links --bootstrap-server kafka2:9092 --command-config /tmp/admin.p
 
 kafka-cluster-links --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
 kafka-cluster-links --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --link demo-link --describe
+
+# List mirrors
+kafka-mirrors --bootstrap-server kafka2:9092 --command-config /tmp/admin.properties --list
 
 # List Topics from both clusters
 kafka-topics --bootstrap-server kafka1:9091 --command-config /tmp/admin.properties --list
