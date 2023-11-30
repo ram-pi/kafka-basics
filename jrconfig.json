@@ -3,9 +3,9 @@
     {
       "name": "shoe",
       "locale": "us",
-      "num": 0,
-      "frequency": "0s",
-      "duration": "0s",
+      "num": 10,
+      "frequency": "1s",
+      "duration": "10s",
       "preload": 10,
       "valueTemplate": "shoe",
       "output": "kafka",

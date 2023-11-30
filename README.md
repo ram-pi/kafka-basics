@@ -22,11 +22,10 @@
 Install JR:
 
 ```
-brew install jr 
+brew install jr
 ```
 
-You can edit the following jr configuration as needed. 
-
+You can edit the following jr configuration as needed.
 
 ```
 {
@@ -131,6 +130,23 @@ kafka-topics --bootstrap-server localhost:9092 --delete --topic test
 kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 3 --config min.insync.replicas=2
 kafka-topics --bootstrap-server localhost:9092 --describe --topic test
 kcat -b localhost:9092 -t test -P -K : -l data.txt
+kcat -C -b localhost:9092 -t test \
+ -f 'Topic %t - Partition %p: Key is %k, and message payload is: %s \n'
+```
+
+</details>
+
+## Random Partitioning
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+kafka-topics --bootstrap-server localhost:9092 --delete --topic test
+kafka-topics --bootstrap-server localhost:9091 --create --topic test --replication-factor 3 --partitions 3 --config min.insync.replicas=2
+kafka-topics --bootstrap-server localhost:9092 --describe --topic test
+kcat -b localhost:9092 -X partitioner=random -t test -P -K : -l data.txt
 kcat -C -b localhost:9092 -t test \
  -f 'Topic %t - Partition %p: Key is %k, and message payload is: %s \n'
 ```
@@ -715,5 +731,47 @@ sleep 5
 ./leader_finder.sh
 
 ```
+
+</details>
+
+## Schema Registry - Naming Strategies - TODO
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+docker-compose up -d
+```
+
+</details>
+
+## Distributed Tracing
+
+<details>
+<summary>Example</summary>
+<br>
+
+```
+docker-compose -f docker-compose.tracing.yaml up -d
+
+# Create a sample topic
+kafka-topics --bootstrap-server localhost:9092 --create --topic test --partitions 1
+
+# Export the javaagent configuration
+export KAFKA_OPTS="-javaagent:opentelemetry-javaagent.jar \
+    -Dotel.service.name=test-svc \
+    -Dotel.traces.exporter=jaeger \
+    -Dotel.metrics.exporter=none \
+    -Dotel.instrumentation.messaging.experimental.receive-telemetry.enabled=true"
+
+# Produce
+seq 1 10 | kafka-console-producer --bootstrap-server localhost:9092 --topic test
+
+# Consume
+kafka-console-consumer --bootstrap-server localhost:9092 --from-beginning --topic test --timeout-ms 5000
+```
+
+Open [Jaeger](http://localhost:16686/) and check for spans.
 
 </details>

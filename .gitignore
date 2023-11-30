@@ -107,3 +107,4 @@ fabric.properties
 **/jupyter-notebooks/.ipynb_checkpoints
 **/jd-gui.cfg
 **/mvnw**
+**/*.log
